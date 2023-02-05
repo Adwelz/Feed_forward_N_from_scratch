@@ -6,7 +6,7 @@ import configparser
 
 # get the configuration from the config file
 config = configparser.ConfigParser()
-config.read('config_3.ini')
+config.read('config_1.ini')
 
 """
 :param count: number of images
@@ -64,7 +64,7 @@ def fit(neural_network,number_of_batches,number_of_epoch,train_cases,train_size,
             train_loss=neural_network.forward_pass(train_batche_lentgh,train_cases[0][train_batche_lentgh*i:train_batche_lentgh*(i+1)],train_cases[1][train_batche_lentgh*i:train_batche_lentgh*(i+1)])
             train_losses.append(train_loss)
             neural_network.backward_pass(train_cases[1][train_batche_lentgh*(i+1)-1])
-            validation_loss=neural_network.forward_pass(validation_cases_count,validation_cases[0],validation_cases[1])
+            validation_loss=neural_network.forward_pass(validation_size,validation_cases[0],validation_cases[1])
             validation_losses.append(validation_loss)
 
     # test cases

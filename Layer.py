@@ -168,10 +168,10 @@ class Layer:
         # if jacobian_l_z is a vector
         if jacobian_l_z.ndim == 1:
             simp_j_z_w = simplified_jacobian_z_w_function(
-                self.inputs[-1], self.outputs[-1], self.transfer_function_derivative)
+                    self.inputs[0], self.outputs[0], self.transfer_function_derivative)
 
             jacobian_z_y = jacobian_z_y_function(
-                self.outputs[-1], self.transfer_function_derivative, self.weights)
+                self.outputs[0], self.transfer_function_derivative, self.weights)
 
             jacobian_l_y = np.dot(jacobian_l_z, jacobian_z_y)
 
@@ -184,6 +184,29 @@ class Layer:
 
             if wrt == 'L1':
                 jacobian_l_w = jacobian_l_z*simp_j_z_w+float(wreg)*np.sign(self.weights)
+
+            for i in range(1,len(self.inputs)):
+                simp_j_z_w = simplified_jacobian_z_w_function(
+                    self.inputs[i], self.outputs[i], self.transfer_function_derivative)
+
+                jacobian_z_y = jacobian_z_y_function(
+                    self.outputs[i], self.transfer_function_derivative, self.weights)
+
+                jacobian_l_y += np.dot(jacobian_l_z, jacobian_z_y)
+
+                # jacobian_l_w given the weights regularization type
+                if wrt == 'none':
+                    jacobian_l_w += jacobian_l_z*simp_j_z_w
+
+                if wrt == 'L2':
+                    jacobian_l_w += jacobian_l_z*simp_j_z_w+float(wreg)*self.weights
+
+                if wrt == 'L1':
+                    jacobian_l_w += jacobian_l_z*simp_j_z_w+float(wreg)*np.sign(self.weights)
+            
+            jacobian_l_w=jacobian_l_w/len(self.inputs)
+
+            jacobian_l_y=jacobian_l_y/len(self.inputs)
 
             # update the weights
             self.weights = self.weights-self.lr*jacobian_l_w
