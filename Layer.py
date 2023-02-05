@@ -43,7 +43,10 @@ def simplified_jacobian_z_w_function(y, z, ft_derivative):
 :return: relu output
 """
 def relu(x):
-    return x * (x > 0)
+    if x>0:
+        return x
+    else:
+        return 0
 
 
 """
@@ -51,7 +54,10 @@ def relu(x):
 :return: derivative of relu output
 """
 def derivative_of_relu(x):
-    return 1. * (x > 0)
+    if x>0:
+        return 1
+    else :
+        return 0
 
 
 class Layer:
@@ -123,6 +129,7 @@ class Layer:
 
     """
     :param self: the layer
+    :param batch_size: size of the batch
     """
     def forward_pass(self,batch_size):
         B=np.ones((batch_size, self.number_of_nodes))*self.biais
@@ -133,85 +140,58 @@ class Layer:
 
     """
     :param self: the layer
-    :return Jacobian of the effect of the y upon the loss
+    :param jacobian_l_z_list: list of the jacobian of the effect of the outputs z upon the loss for each case in a batch
+    :param wrt: weights regularization type
+    :param wreg: weigths regularization rate
+    :return Jacobian list of the effect of the inputs y upon the loss
     """
-    def backward_pass(self, jacobian_l_z, wrt='none', wreg='0'):
+    def backward_pass(self, jacobian_l_z_list, wrt='none', wreg='0'):
+        jacobian_l_y_list=[]
 
-        # if jacobian_l_z is a scalar
-        if jacobian_l_z.ndim == 0:
+        simp_j_z_w = simplified_jacobian_z_w_function(
+                self.inputs[0], self.outputs[0], self.transfer_function_derivative)
+
+        jacobian_z_y = jacobian_z_y_function(
+            self.outputs[0], self.transfer_function_derivative, self.weights)
+
+        jacobian_l_y_list.append(np.dot(jacobian_l_z_list[0], jacobian_z_y))
+
+        # jacobian_l_w given the weights regularization type
+        if wrt == 'none':
+            jacobian_l_w = jacobian_l_z_list[0]*simp_j_z_w
+
+        if wrt == 'L2':
+            jacobian_l_w = jacobian_l_z_list[0]*simp_j_z_w+float(wreg)*self.weights
+
+        if wrt == 'L1':
+            jacobian_l_w = jacobian_l_z_list[0]*simp_j_z_w+float(wreg)*np.sign(self.weights)
+
+        for i in range(1,len(self.inputs)):
             simp_j_z_w = simplified_jacobian_z_w_function(
-                self.inputs, self.outputs, self.transfer_function_derivative)
+                self.inputs[i], self.outputs[i], self.transfer_function_derivative)
 
             jacobian_z_y = jacobian_z_y_function(
-                self.outputs, self.transfer_function_derivative, self.weights)
+                self.outputs[i], self.transfer_function_derivative, self.weights)
 
-            jacobian_l_y = np.dot(jacobian_l_z, jacobian_z_y)
+            jacobian_l_y_list.append(np.dot(jacobian_l_z_list[i], jacobian_z_y))
 
             # jacobian_l_w given the weights regularization type
             if wrt == 'none':
-                jacobian_l_w = jacobian_l_z*simp_j_z_w
+                jacobian_l_w += jacobian_l_z_list[i]*simp_j_z_w
 
             if wrt == 'L2':
-                jacobian_l_w = jacobian_l_z*simp_j_z_w + float(wreg)*self.weights
+                jacobian_l_w += jacobian_l_z_list[i]*simp_j_z_w+float(wreg)*self.weights
 
             if wrt == 'L1':
-                jacobian_l_w = jacobian_l_z*simp_j_z_w + float(wreg)*np.sign(self.weights)
+                jacobian_l_w += jacobian_l_z_list[i]*simp_j_z_w+float(wreg)*np.sign(self.weights)
+        
+        # get the mean of the jacobians of the effect of the weights on the loss
+        jacobian_l_w=jacobian_l_w/len(self.inputs)
 
-            # update the weights
-            self.weights = self.weights-self.lr*jacobian_l_w
+        # update the weights
+        self.weights = self.weights-self.lr*jacobian_l_w
 
-            # update the biais
-            self.biais = self.biais-self.b_lr*jacobian_l_z
+        # update the biais
+        self.biais = self.biais-self.b_lr*np.sum(jacobian_l_z_list,axis=0)
 
-            return jacobian_l_y
-
-        # if jacobian_l_z is a vector
-        if jacobian_l_z.ndim == 1:
-            simp_j_z_w = simplified_jacobian_z_w_function(
-                    self.inputs[0], self.outputs[0], self.transfer_function_derivative)
-
-            jacobian_z_y = jacobian_z_y_function(
-                self.outputs[0], self.transfer_function_derivative, self.weights)
-
-            jacobian_l_y = np.dot(jacobian_l_z, jacobian_z_y)
-
-            # jacobian_l_w given the weights regularization type
-            if wrt == 'none':
-                jacobian_l_w = jacobian_l_z*simp_j_z_w
-
-            if wrt == 'L2':
-                jacobian_l_w = jacobian_l_z*simp_j_z_w+float(wreg)*self.weights
-
-            if wrt == 'L1':
-                jacobian_l_w = jacobian_l_z*simp_j_z_w+float(wreg)*np.sign(self.weights)
-
-            for i in range(1,len(self.inputs)):
-                simp_j_z_w = simplified_jacobian_z_w_function(
-                    self.inputs[i], self.outputs[i], self.transfer_function_derivative)
-
-                jacobian_z_y = jacobian_z_y_function(
-                    self.outputs[i], self.transfer_function_derivative, self.weights)
-
-                jacobian_l_y += np.dot(jacobian_l_z, jacobian_z_y)
-
-                # jacobian_l_w given the weights regularization type
-                if wrt == 'none':
-                    jacobian_l_w += jacobian_l_z*simp_j_z_w
-
-                if wrt == 'L2':
-                    jacobian_l_w += jacobian_l_z*simp_j_z_w+float(wreg)*self.weights
-
-                if wrt == 'L1':
-                    jacobian_l_w += jacobian_l_z*simp_j_z_w+float(wreg)*np.sign(self.weights)
-            
-            jacobian_l_w=jacobian_l_w/len(self.inputs)
-
-            jacobian_l_y=jacobian_l_y/len(self.inputs)
-
-            # update the weights
-            self.weights = self.weights-self.lr*jacobian_l_w
-
-            # update the biais
-            self.biais = self.biais-self.b_lr*jacobian_l_z
-
-            return jacobian_l_y
+        return jacobian_l_y_list

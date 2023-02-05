@@ -15,7 +15,7 @@ def jacobian_soft_function(s):
             else:
                 row.append(-s[k]*s[i])
         J.append(row)
-    return np.array(J)
+    return J
 
 
 """
@@ -55,7 +55,7 @@ def softmax(m):
 
 
 # verbose option
-verbose = True
+verbose = False
 
 if verbose:
     """
@@ -195,8 +195,13 @@ class Network:
 
             if self.config['GLOBALS']['loss'] == 'cross_entropy':
                 for i in range(len(loss_array)):
-                    loss_list.append(-np.sum(targets[i]*np.log(
-                        self.output_layer.softmax_outputs[i])))
+                    if self.config['OUTPUT_LAYER']['softmax'] == 'True':
+                        loss_list.append(-np.sum(targets[i]*np.log(
+                            self.output_layer.softmax_outputs[i])))
+                    else :
+                        loss_list.append(-np.sum(targets[i]*np.log(
+                            self.output_layer.outputs[i])))
+
                 loss = np.array(loss_list).mean()
                 verboseprint('cross_entropy :', loss)
 
@@ -224,55 +229,48 @@ class Network:
 
     """
     :param self: the neural network
-    :param last_target: the last target of the batch
+    :param targets: the targets of the batch
     """
-    def backward_pass(self, last_target):
+    def backward_pass(self, targets):
 
         # case where softmax is applied to the output layer
         if self.config['OUTPUT_LAYER']['softmax'] == 'True':
-
-            # case where the softmax output is a vector
-            if self.output_layer.softmax_outputs.ndim == 1:
-                last_output = self.output_layer.softmax_outputs
-
-            # case where the softmax output is a matrix
-            if self.output_layer.softmax_outputs.ndim == 2:
-                last_output = self.output_layer.softmax_outputs[-1]
+            outputs = self.output_layer.softmax_outputs
 
         # case where softmax is not applied to the output layer
         else:
+            outputs = self.output_layer.outputs
 
-            # case where the output is a vector
-            if self.output_layer.outputs.ndim == 1:
-                last_output = self.output_layer.outputs
-
-            # case where the output is a matrix
-            if self.output_layer.outputs.ndim == 2:
-                last_output = self.output_layer.outputs[-1]
-
-        loss_list_of_the_last_target = last_output-last_target
+        loss_list = outputs-targets
 
         # compute MSE
         if self.config['GLOBALS']['loss'] == 'MSE':
-            if loss_list_of_the_last_target.ndim == 0:
-                jacobian_l_z = 2*loss_list_of_the_last_target
-            if loss_list_of_the_last_target.ndim == 1:
-                jacobian_l_z = (1/len(loss_list_of_the_last_target)
-                                )*2*loss_list_of_the_last_target
+            if loss_list.ndim == 0:
+                jacobian_l_z = 2*loss_list
+            if loss_list.ndim == 1:
+                jacobian_l_z = (1/len(loss_list)
+                                )*2*loss_list
+            if loss_list.ndim == 2:
+                jacobian_l_z = (1/len(loss_list[0]))*2*loss_list
 
         # compute cross entropy
         if self.config['GLOBALS']['loss'] == 'cross_entropy':
-            jacobian_l_z = -last_target/last_output
+            jacobian_l_z = -targets/outputs
 
         # compute the jacobian with the effect of the output of the output layer on the loss
         if self.config['OUTPUT_LAYER']['softmax'] == 'True':
-            jacobian_soft = jacobian_soft_function(last_output)
-            jacobian_l_z = np.dot(jacobian_l_z, jacobian_soft)
+            jacobian_l_z_list=[]
+            for i in range(len(outputs)):
+                jacobian_soft = jacobian_soft_function(outputs[i])
+                temp_jacobian_l_z = np.dot(jacobian_l_z[i], jacobian_soft)
+                jacobian_l_z_list.append(temp_jacobian_l_z)
+        else :
+            jacobian_l_z_list=jacobian_l_z
 
         # backward pass of the output layer and get the jacobian of the effect of the inputs of the output layer on the loss
-        jacobian_l_y = self.output_layer.backward_pass(
-            jacobian_l_z, self.config['GLOBALS']['wrt'], self.config['GLOBALS']['wreg'])
+        jacobian_l_y_list = self.output_layer.backward_pass(
+            jacobian_l_z_list, self.config['GLOBALS']['wrt'], self.config['GLOBALS']['wreg'])
 
         # backward pass of each hidden layer and get the jacobian of the effect of the inputs of the hidden layer on the loss
         for hl in reversed(self.hidden_layers):
-            jacobian_l_y = hl.backward_pass(jacobian_l_y)
+            jacobian_l_y_list = hl.backward_pass(jacobian_l_y_list)

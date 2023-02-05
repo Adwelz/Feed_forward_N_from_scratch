@@ -6,7 +6,7 @@ import configparser
 
 # get the configuration from the config file
 config = configparser.ConfigParser()
-config.read('config_1.ini')
+config.read('config_3.ini')
 
 """
 :param count: number of images
@@ -16,24 +16,24 @@ config.read('config_1.ini')
 :param validation_size: size of the validation dataset
 :returns: train, validation and test datasets and their size
 """
-def generator(count,n,_doodle_image_types_,train_size=0.7, validation_size=0.2):
+def generator(count,n,_doodle_image_types_,train_size=0.7, validation_size=0.2,width_range=[0.2,0.5],hight_range=[0.2,0.4],g_noise=0.01,flat_image=True):
 
     # generate the train cases
     train_cases_count=int(count*train_size)
-    train_cases=doodler_forall.gen_standard_cases(train_cases_count,rows=n,cols=n,types=_doodle_image_types_,wr=[0.2,0.5],hr=[0.2,0.4],
-    noise=0.01, cent=False, show=False, flat=True,
+    train_cases=doodler_forall.gen_standard_cases(train_cases_count,rows=n,cols=n,types=_doodle_image_types_,wr=width_range,hr=hight_range,
+    noise=g_noise, cent=False, show=False, flat=flat_image,
     fc=(1,1),auto=False,mono=True,one_hots=True,multi=False)
 
     # generate the validation cases
     validation_cases_count=int(count*validation_size)
-    validation_cases=doodler_forall.gen_standard_cases(validation_cases_count,rows=n,cols=n,types=_doodle_image_types_,wr=[0.2,0.5],hr=[0.2,0.4],
-    noise=0.01, cent=False, show=False, flat=True,
+    validation_cases=doodler_forall.gen_standard_cases(validation_cases_count,rows=n,cols=n,types=_doodle_image_types_,wr=width_range,hr=hight_range,
+    noise=g_noise, cent=False, show=False, flat=flat_image,
     fc=(1,1),auto=False,mono=True,one_hots=True,multi=False)
 
     # generate the tests cases
     test_cases_count=int(count*(1-train_size-validation_size))
-    test_cases=doodler_forall.gen_standard_cases(test_cases_count,rows=n,cols=n,types=_doodle_image_types_,wr=[0.2,0.5],hr=[0.2,0.4],
-    noise=0.01, cent=False, show=False, flat=True,
+    test_cases=doodler_forall.gen_standard_cases(test_cases_count,rows=n,cols=n,types=_doodle_image_types_,wr=width_range,hr=hight_range,
+    noise=g_noise, cent=False, show=False, flat=flat_image,
     fc=(1,1),auto=False,mono=True,one_hots=True,multi=False)
 
     return train_cases,validation_cases,test_cases,train_cases_count,validation_cases_count,test_cases_count
@@ -63,7 +63,7 @@ def fit(neural_network,number_of_batches,number_of_epoch,train_cases,train_size,
             print('\n----- batch n°'+str(i+1)+'/'+str(number_of_batches)+' -----\n')
             train_loss=neural_network.forward_pass(train_batche_lentgh,train_cases[0][train_batche_lentgh*i:train_batche_lentgh*(i+1)],train_cases[1][train_batche_lentgh*i:train_batche_lentgh*(i+1)])
             train_losses.append(train_loss)
-            neural_network.backward_pass(train_cases[1][train_batche_lentgh*(i+1)-1])
+            neural_network.backward_pass(train_cases[1][train_batche_lentgh*i:train_batche_lentgh*(i+1)])
             validation_loss=neural_network.forward_pass(validation_size,validation_cases[0],validation_cases[1])
             validation_losses.append(validation_loss)
 
@@ -82,9 +82,7 @@ def fit(neural_network,number_of_batches,number_of_epoch,train_cases,train_size,
     plt.rcParams["figure.figsize"] = [7.50, 3.50]
     plt.rcParams["figure.autolayout"] = True
 
-    plt.show()
-
-    return neural_network
+    return neural_network, plt.show()
 
 
 
@@ -95,6 +93,10 @@ count=int(config['GLOBALS']['count'])
 
 train_cases,validation_cases,test_cases,train_cases_count,validation_cases_count,test_cases_count=generator(count=count, n=n,_doodle_image_types_=_doodle_image_types_)
 
+""" images,_,labels,dims,flat=test_cases
+imgs=images[:10],_[:10],labels[:10],dims,flat
+doodler_forall.show_doodle_cases(imgs) """
+
 number_of_batches=int(config['GLOBALS']['number_of_batches'])
 test_batche_lentgh=len(test_cases)//number_of_batches
 number_of_epoch=int(config['GLOBALS']['number_of_epoch'])
@@ -103,3 +105,5 @@ number_of_epoch=int(config['GLOBALS']['number_of_epoch'])
 N=Network(config)
 
 fit(N,number_of_batches,number_of_epoch,train_cases,train_cases_count,validation_cases,validation_cases_count,test_cases,test_cases_count)
+
+
