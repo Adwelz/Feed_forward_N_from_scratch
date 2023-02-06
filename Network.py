@@ -31,7 +31,7 @@ def l2(weights):
 :return: L1 regularization
 """
 def l1(weights):
-    return (1/2)*np.sum(np.abs(weights))
+    return np.sum(np.abs(weights))
 
 
 """
@@ -257,7 +257,7 @@ class Network:
         if self.config['GLOBALS']['loss'] == 'cross_entropy':
             jacobian_l_z = -targets/outputs
 
-        # compute the jacobian with the effect of the output of the output layer on the loss
+        # compute the jacobian with the effect of the output of the output layer on the loss for each outputs of the batch
         if self.config['OUTPUT_LAYER']['softmax'] == 'True':
             jacobian_l_z_list=[]
             for i in range(len(outputs)):
@@ -267,10 +267,10 @@ class Network:
         else :
             jacobian_l_z_list=jacobian_l_z
 
-        # backward pass of the output layer and get the jacobian of the effect of the inputs of the output layer on the loss
+        # backward pass of the output layer and get the jacobians of the effect of the inputs of the output layer on the loss
         jacobian_l_y_list = self.output_layer.backward_pass(
             jacobian_l_z_list, self.config['GLOBALS']['wrt'], self.config['GLOBALS']['wreg'])
 
-        # backward pass of each hidden layer and get the jacobian of the effect of the inputs of the hidden layer on the loss
+        # recursive backward pass of each hidden layer and get the jacobians of the effect of the inputs of the hidden layer on the loss
         for hl in reversed(self.hidden_layers):
             jacobian_l_y_list = hl.backward_pass(jacobian_l_y_list)

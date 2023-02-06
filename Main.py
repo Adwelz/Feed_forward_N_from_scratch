@@ -61,7 +61,8 @@ def fit(neural_network,number_of_batches,number_of_epoch,train_cases,train_size,
         # batches
         for i in range(number_of_batches):
             print('\n----- batch n°'+str(i+1)+'/'+str(number_of_batches)+' -----\n')
-            train_loss=neural_network.forward_pass(train_batche_lentgh,train_cases[0][train_batche_lentgh*i:train_batche_lentgh*(i+1)],train_cases[1][train_batche_lentgh*i:train_batche_lentgh*(i+1)])
+            train_loss=neural_network.forward_pass(train_batche_lentgh,train_cases[0][train_batche_lentgh*i:train_batche_lentgh*(i+1)],
+                                                    train_cases[1][train_batche_lentgh*i:train_batche_lentgh*(i+1)])
             train_losses.append(train_loss)
             neural_network.backward_pass(train_cases[1][train_batche_lentgh*i:train_batche_lentgh*(i+1)])
             validation_loss=neural_network.forward_pass(validation_size,validation_cases[0],validation_cases[1])
@@ -89,6 +90,7 @@ def fit(neural_network,number_of_batches,number_of_epoch,train_cases,train_size,
 _doodle_image_types_=['ring','frame','triangle','bar']
 
 n=int(config['GLOBALS']['n'])
+#n=50
 count=int(config['GLOBALS']['count'])
 
 train_cases,validation_cases,test_cases,train_cases_count,validation_cases_count,test_cases_count=generator(count=count, n=n,_doodle_image_types_=_doodle_image_types_)

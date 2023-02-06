@@ -43,10 +43,7 @@ def simplified_jacobian_z_w_function(y, z, ft_derivative):
 :return: relu output
 """
 def relu(x):
-    if x>0:
-        return x
-    else:
-        return 0
+    return x*(x>0)
 
 
 """
@@ -54,10 +51,8 @@ def relu(x):
 :return: derivative of relu output
 """
 def derivative_of_relu(x):
-    if x>0:
-        return 1
-    else :
-        return 0
+    return 1 * (x>0)
+
 
 
 class Layer:
@@ -192,6 +187,6 @@ class Layer:
         self.weights = self.weights-self.lr*jacobian_l_w
 
         # update the biais
-        self.biais = self.biais-self.b_lr*np.sum(jacobian_l_z_list,axis=0)
+        self.biais = self.biais-self.b_lr*np.sum(jacobian_l_z_list,axis=0)/len(jacobian_l_z_list)
 
         return jacobian_l_y_list
