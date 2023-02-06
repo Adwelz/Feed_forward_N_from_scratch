@@ -1,11 +1,12 @@
 from Layer import Layer
 import numpy as np
 
-"""
-:param s: outputs of the softmax
-:return: Jacobian of the softmax function
-"""
+
 def jacobian_soft_function(s):
+    """
+    :param s: outputs of the softmax
+    :return: Jacobian of the softmax function
+    """
     J = []
     for i in range(len(s)):
         row = []
@@ -18,27 +19,27 @@ def jacobian_soft_function(s):
     return J
 
 
-"""
-:param weights: all the weights of the neural network
-:return: L2 regularization
-"""
 def l2(weights):
+    """
+    :param weights: all the weights of the neural network
+    :return: L2 regularization
+    """
     return (1/2)*np.sum(weights**2)
 
 
-"""
-:param weights: all the weights of the neural network
-:return: L1 regularization
-"""
 def l1(weights):
+    """
+    :param weights: all the weights of the neural network
+    :return: L1 regularization
+    """
     return np.sum(np.abs(weights))
 
 
-"""
-:param m: a matrix or a vector
-:return: a matrix wich each columns have the softmax function applied or a vector of the softmax function applied
-"""
 def softmax(m):
+    """
+    :param m: a matrix or a vector
+    :return: a matrix wich each columns have the softmax function applied or a vector of the softmax function applied
+    """
     if m.ndim == 2:
         A = []
         for row in m:
@@ -58,11 +59,11 @@ def softmax(m):
 verbose = False
 
 if verbose:
-    """
-    :param *args: list of arguments
-    :return: the function verboseprint
-    """
     def verboseprint(*args):
+        """
+        :param *args: list of arguments
+        :return: the function verboseprint
+        """
         for arg in args:
             print(arg,)
 else:
@@ -70,14 +71,12 @@ else:
 
 
 class Network:
-
-    """
-    :param self: the neural network
-    :param config: configuration of the neural network
-    :return: the neural network with the given configuration
-    """
     def __init__(self, config) -> None:
-
+        """
+        :param self: the neural network
+        :param config: configuration of the neural network
+        :return: the neural network with the given configuration
+        """
         # set the config
         self.config = config
 
@@ -92,31 +91,33 @@ class Network:
             self.hidden_layers = []
 
             self.output_layer = Layer(int(config['INPUT_LAYER']['input']), int(config['OUTPUT_LAYER']['size']),
-                                        config['OUTPUT_LAYER']['act'], config['OUTPUT_LAYER']['wr'], lr=config['OUTPUT_LAYER']['lrate'], 
-                                        br=config['OUTPUT_LAYER']['br'], b_lr=config['OUTPUT_LAYER']['b_lrate'])
+                                      config['OUTPUT_LAYER']['act'], config['OUTPUT_LAYER']['wr'], lr=config['OUTPUT_LAYER']['lrate'],
+                                      br=config['OUTPUT_LAYER']['br'], b_lr=config['OUTPUT_LAYER']['b_lrate'])
 
         # set the hidden layers and the output layer in the case where there is hidden layers in the configuration
         else:
             self.hidden_layers = []
             self.hidden_layers.append(Layer(int(config['INPUT_LAYER']['input']), int(config[hidden_layers[0]]['size']),
-                                            config[hidden_layers[0]]['act'], config[hidden_layers[0]]['wr'], config[hidden_layers[0]]['lrate'], 
+                                            config[hidden_layers[0]]['act'], config[hidden_layers[0]
+                                                                                    ]['wr'], config[hidden_layers[0]]['lrate'],
                                             br=config[hidden_layers[0]]['br'], b_lr=config[hidden_layers[0]]['b_lrate']))
             for i in range(1, len(hidden_layers)):
                 self.hidden_layers.append(Layer(int(config[hidden_layers[i-1]]['size']), int(config[hidden_layers[i]]['size']),
-                                                config[hidden_layers[i]]['act'], config[hidden_layers[i]]['wr'], config[hidden_layers[i]]['lrate'], 
+                                                config[hidden_layers[i]]['act'], config[hidden_layers[i]
+                                                                                        ]['wr'], config[hidden_layers[i]]['lrate'],
                                                 br=config[hidden_layers[i]]['br'], b_lr=config[hidden_layers[i]]['b_lrate']))
             self.output_layer = Layer(int(config[hidden_layers[-1]]['size']), int(config['OUTPUT_LAYER']['size']),
-                                        config['OUTPUT_LAYER']['act'], config['OUTPUT_LAYER']['wr'], lr=config['OUTPUT_LAYER']['lrate'], 
-                                        br=config['OUTPUT_LAYER']['br'], b_lr=config['OUTPUT_LAYER']['b_lrate'])
+                                      config['OUTPUT_LAYER']['act'], config['OUTPUT_LAYER']['wr'], lr=config['OUTPUT_LAYER']['lrate'],
+                                      br=config['OUTPUT_LAYER']['br'], b_lr=config['OUTPUT_LAYER']['b_lrate'])
 
-    """
-    :param self: the neural network
-    :param batch_length: the length of the batch
-    :param inputs: inputs of the neural network
-    :param targets: targets of the neural network
-    :return: the loss of the neural network
-    """
     def forward_pass(self, batch_length, inputs, targets):
+        """
+        :param self: the neural network
+        :param batch_length: the length of the batch
+        :param inputs: inputs of the neural network
+        :param targets: targets of the neural network
+        :return: the loss of the neural network
+        """
         verboseprint('FORWARD_PASS :')
 
         # forward pass of the hidden layers
@@ -178,7 +179,8 @@ class Network:
                 verboseprint('MSE :', loss)
 
             if self.config['GLOBALS']['loss'] == 'cross_entropy':
-                loss = - np.sum(targets*np.log(self.output_layer.softmax_outputs))
+                loss = - \
+                    np.sum(targets*np.log(self.output_layer.softmax_outputs))
                 verboseprint('cross_entropy :', loss)
 
         # case where loss_list is a matrix
@@ -198,7 +200,7 @@ class Network:
                     if self.config['OUTPUT_LAYER']['softmax'] == 'True':
                         loss_list.append(-np.sum(targets[i]*np.log(
                             self.output_layer.softmax_outputs[i])))
-                    else :
+                    else:
                         loss_list.append(-np.sum(targets[i]*np.log(
                             self.output_layer.outputs[i])))
 
@@ -227,12 +229,11 @@ class Network:
         regularised_loss = loss+float(self.config['GLOBALS']['wreg'])*penalty
         return regularised_loss
 
-    """
-    :param self: the neural network
-    :param targets: the targets of the batch
-    """
     def backward_pass(self, targets):
-
+        """
+        :param self: the neural network
+        :param targets: the targets of the batch
+        """
         # case where softmax is applied to the output layer
         if self.config['OUTPUT_LAYER']['softmax'] == 'True':
             outputs = self.output_layer.softmax_outputs
@@ -259,13 +260,13 @@ class Network:
 
         # compute the jacobian with the effect of the output of the output layer on the loss for each outputs of the batch
         if self.config['OUTPUT_LAYER']['softmax'] == 'True':
-            jacobian_l_z_list=[]
+            jacobian_l_z_list = []
             for i in range(len(outputs)):
                 jacobian_soft = jacobian_soft_function(outputs[i])
                 temp_jacobian_l_z = np.dot(jacobian_l_z[i], jacobian_soft)
                 jacobian_l_z_list.append(temp_jacobian_l_z)
-        else :
-            jacobian_l_z_list=jacobian_l_z
+        else:
+            jacobian_l_z_list = jacobian_l_z
 
         # backward pass of the output layer and get the jacobians of the effect of the inputs of the output layer on the loss
         jacobian_l_y_list = self.output_layer.backward_pass(
